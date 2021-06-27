@@ -1,7 +1,9 @@
 import 'package:flash_chat_app/constants.dart';
+import 'package:flash_chat_app/repository/userRepository.dart';
 import 'package:flutter/material.dart';
 import 'package:flash_chat_app/components/rounded_button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import 'chat_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final _userRepository = Provider.of<UserRepository>(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: Padding(
@@ -47,6 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 8.0,
             ),
             TextField(
+              obscureText: true,
               onChanged: (value) {
                 password = value;
               },
@@ -61,12 +65,24 @@ class _LoginScreenState extends State<LoginScreen> {
               colour: Colors.lightBlueAccent,
               onPressed: () async {
                 try {
-                  final user = await _auth.signInWithEmailAndPassword(
-                      email: email, password: password);
-                  if (user != null) {
-                    Navigator.pushNamed(context, ChatScreen.id);
-                  }
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      duration: Duration(minutes: 1),
+                      content: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Loging in'),
+                          CircularProgressIndicator()
+                        ],
+                      )));
+                  await _userRepository.login(email, password);
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+                  Navigator.of(context).pop();
                 } catch (e) {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text('Login failed')));
                   print(
                       "The user name or password didn't match ,You should try again later");
                 }
