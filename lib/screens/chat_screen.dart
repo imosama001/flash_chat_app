@@ -1,7 +1,9 @@
+import 'package:flash_chat_app/repository/userRepository.dart';
 import 'package:flutter/material.dart';
 import 'package:flash_chat_app/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 
 final _firestore = FirebaseFirestore.instance;
 late final User loggedInUser;
@@ -48,6 +50,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final _userRepository = Provider.of<UserRepository>(context);
     return Scaffold(
       appBar: AppBar(
         leading: null,
@@ -55,10 +58,7 @@ class _ChatScreenState extends State<ChatScreen> {
           IconButton(
               icon: Icon(Icons.close),
               onPressed: () {
-                //Implement logout functionality
-                // _auth.signOut();
-                // Navigator.pop(context);
-                messageStream();
+                _userRepository.logout();
               }),
         ],
         title: Text('⚡️Chat'),
@@ -94,6 +94,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         'text': messageText,
                         'sender': loggedInUser.email,
                         'time': DateTime.now().millisecondsSinceEpoch,
+                        'senderUid': FirebaseAuth.instance.currentUser!.uid,
                       });
                     },
                     child: Text(
@@ -112,12 +113,11 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 class MessageBubble extends StatelessWidget {
-  MessageBubble({
-    required this.sender,
-    required this.text,
-  });
+  MessageBubble(
+      {required this.sender, required this.text, required this.senderUid});
   final String sender;
   final String text;
+  final String senderUid;
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +125,9 @@ class MessageBubble extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.all(size.width * .02),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: senderUid == FirebaseAuth.instance.currentUser!.uid
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Text(sender, style: TextStyle(color: Colors.black54, fontSize: 12)),
           Material(
@@ -180,6 +182,7 @@ class MessagesStream extends StatelessWidget {
                         MessageBubble(
                           sender: message['sender'],
                           text: message['text'],
+                          senderUid: message['senderUid'] ?? '',
                         ),
                       // Text(message['text'] +
                       //     '  from  ' +
