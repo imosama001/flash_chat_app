@@ -95,13 +95,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   ));
                 },
               ),
-              // SizedBox(height: 30),
-              // IconButton(
-              //   icon: Center(child: Icon(Icons.album_sharp, size: 80)),
-              //   onPressed: () {
-              //     _themeRepository.toggleThemeState();
-              //   },
-              // ),
               Material(
                 elevation: 0,
                 child: InkWell(
