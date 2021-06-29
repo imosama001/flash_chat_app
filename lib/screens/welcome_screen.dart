@@ -1,8 +1,10 @@
+import 'package:flash_chat_app/repository/themeRepository.dart';
 import 'package:flash_chat_app/screens/login_screen.dart';
 import 'package:flash_chat_app/screens/registration_screen.dart';
 import 'package:flutter/material.dart';
 //import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flash_chat_app/components/rounded_button.dart';
+import 'package:provider/provider.dart';
 
 class WelcomeScreen extends StatefulWidget {
   static const String id = "welcome_screen";
@@ -27,8 +29,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final _themeRepository = Provider.of<ThemeRepository>(context);
+    Size size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: Colors.white,
+      // backgroundColor: Colors.white,
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 24.0),
         child: Column(
@@ -49,7 +53,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   style: TextStyle(
                     fontSize: 45.0,
                     fontWeight: FontWeight.w900,
-                    color: Colors.black,
+                    // color: Colors.black,
                   ),
                 ),
               ],
@@ -75,6 +79,25 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 ));
               },
             ),
+            // SizedBox(height: 30),
+            // IconButton(
+            //   icon: Center(child: Icon(Icons.album_sharp, size: 80)),
+            //   onPressed: () {
+            //     _themeRepository.toggleThemeState();
+            //   },
+            // ),
+            Material(
+              elevation: 0,
+              child: InkWell(
+                onTap: () {
+                  _themeRepository.toggleThemeState();
+                },
+                child: Icon(
+                  Icons.album_sharp,
+                  size: size.width * 0.1,
+                ),
+              ),
+            )
           ],
         ),
       ),

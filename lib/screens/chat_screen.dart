@@ -1,3 +1,5 @@
+import 'package:flash_chat_app/main.dart';
+import 'package:flash_chat_app/repository/themeRepository.dart';
 import 'package:flash_chat_app/repository/userRepository.dart';
 import 'package:flutter/material.dart';
 import 'package:flash_chat_app/constants.dart';
@@ -29,7 +31,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void getCurrentUser() async {
     try {
-      final user = await _auth.currentUser;
+      final user = _auth.currentUser;
       if (user != null) {
         loggedInUser = user;
         print(loggedInUser.email);
@@ -51,18 +53,24 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final _userRepository = Provider.of<UserRepository>(context);
+    final _themeRepository = Provider.of<ThemeRepository>(context);
     return Scaffold(
       appBar: AppBar(
-        leading: null,
         actions: <Widget>[
           IconButton(
-              icon: Icon(Icons.close),
+              icon: Icon(Icons.logout),
+              tooltip: 'Log out',
               onPressed: () {
                 _userRepository.logout();
               }),
+          IconButton(
+              icon: Icon(Icons.album_sharp),
+              onPressed: () {
+                _themeRepository.toggleThemeState();
+              })
         ],
         title: Text('⚡️Chat'),
-        backgroundColor: Colors.lightBlueAccent,
+        backgroundColor: Theme.of(context).accentColor,
       ),
       body: SafeArea(
         child: Column(
@@ -89,13 +97,17 @@ class _ChatScreenState extends State<ChatScreen> {
                   TextButton(
                     onPressed: () {
                       //message Text + loggedInUser.email
-                      messageTextController.clear();
-                      _firestore.collection('messages').add({
-                        'text': messageText,
-                        'sender': loggedInUser.email,
-                        'time': DateTime.now().millisecondsSinceEpoch,
-                        'senderUid': FirebaseAuth.instance.currentUser!.uid,
-                      });
+                      if (messageTextController.text.trim().isNotEmpty) {
+                        messageTextController.clear();
+                        _firestore.collection('messages').add(
+                          {
+                            'text': messageText.trim(),
+                            'sender': loggedInUser.email,
+                            'time': DateTime.now().millisecondsSinceEpoch,
+                            'senderUid': FirebaseAuth.instance.currentUser!.uid,
+                          },
+                        );
+                      }
                     },
                     child: Text(
                       'Send',
@@ -129,22 +141,32 @@ class MessageBubble extends StatelessWidget {
             ? CrossAxisAlignment.end
             : CrossAxisAlignment.start,
         children: [
-          Text(sender, style: TextStyle(color: Colors.black54, fontSize: 12)),
-          Material(
-            elevation: size.width * .01,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(size.height * .05),
-              bottomLeft: Radius.circular(size.height * .05),
-              bottomRight: Radius.circular(size.height * .05),
-            ),
-            color: Colors.blueAccent[400],
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                  vertical: size.height * .015, horizontal: size.width * .05),
-              child: Text(
-                text,
-                style:
-                    TextStyle(fontSize: size.width * .04, color: Colors.white),
+          // Text(sender, style: TextStyle(color: Colors.black54, fontSize: 12)),
+          Container(
+            constraints: BoxConstraints(maxWidth: size.width * 0.7),
+            child: Material(
+              elevation: size.width * .01,
+              borderRadius: BorderRadius.only(
+                topLeft: senderUid == FirebaseAuth.instance.currentUser!.uid
+                    ? Radius.circular(size.height * .05)
+                    : Radius.zero,
+                topRight: senderUid != FirebaseAuth.instance.currentUser!.uid
+                    ? Radius.circular(size.height * .05)
+                    : Radius.zero,
+                bottomLeft: Radius.circular(size.height * .05),
+                bottomRight: Radius.circular(size.height * .05),
+              ),
+              color: senderUid == FirebaseAuth.instance.currentUser!.uid
+                  ? Colors.blueAccent[400]
+                  : Colors.pinkAccent[400],
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                    vertical: size.height * .015, horizontal: size.width * .05),
+                child: Text(
+                  text,
+                  style: TextStyle(
+                      fontSize: size.width * .04, color: Colors.white),
+                ),
               ),
             ),
           ),
@@ -176,13 +198,15 @@ class MessagesStream extends StatelessWidget {
           return messageList.isNotEmpty
               ? Expanded(
                   child: ListView(
+                    reverse: true,
                     padding: EdgeInsets.only(left: 10),
                     children: [
-                      for (var message in messageList)
+                      // for (var message in messageList)
+                      for (int i = messageList.length - 1; i >= 0; i--)
                         MessageBubble(
-                          sender: message['sender'],
-                          text: message['text'],
-                          senderUid: message['senderUid'] ?? '',
+                          sender: messageList[i]['sender'],
+                          text: messageList[i]['text'],
+                          senderUid: messageList[i]['senderUid'] ?? '',
                         ),
                       // Text(message['text'] +
                       //     '  from  ' +
