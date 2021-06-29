@@ -57,18 +57,6 @@ class _FlashChatState extends State<FlashChat> {
   Widget build(BuildContext context) {
     Firebase.initializeApp();
 
-    // Future<bool> onWillPop() {
-    //   print('*' * 50);
-    //   DateTime now = DateTime.now();
-    //   if (currentBackPressTime == null ||
-    //       now.difference(currentBackPressTime!) > Duration(seconds: 2)) {
-    //     currentBackPressTime = now;
-    //     Fluttertoast.showToast(msg: 'Back again to exit');
-    //     return Future.value(false);
-    //   }
-    //   return Future.value(true);
-    // }
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: getThemeData(context),
