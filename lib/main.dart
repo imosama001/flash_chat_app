@@ -1,10 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flash_chat_app/repository/themeRepository.dart';
 import 'package:flash_chat_app/repository/userRepository.dart';
+import 'package:flash_chat_app/screens/splashScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flash_chat_app/screens/welcome_screen.dart';
-import 'package:flash_chat_app/screens/login_screen.dart';
-import 'package:flash_chat_app/screens/registration_screen.dart';
 import 'package:flash_chat_app/screens/chat_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
@@ -52,9 +51,23 @@ class FlashChat extends StatefulWidget {
 }
 
 class _FlashChatState extends State<FlashChat> {
+  DateTime? currentBackPressTime;
+
   @override
   Widget build(BuildContext context) {
     Firebase.initializeApp();
+
+    // Future<bool> onWillPop() {
+    //   print('*' * 50);
+    //   DateTime now = DateTime.now();
+    //   if (currentBackPressTime == null ||
+    //       now.difference(currentBackPressTime!) > Duration(seconds: 2)) {
+    //     currentBackPressTime = now;
+    //     Fluttertoast.showToast(msg: 'Back again to exit');
+    //     return Future.value(false);
+    //   }
+    //   return Future.value(true);
+    // }
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -74,24 +87,16 @@ ThemeData getThemeData(BuildContext context) {
 }
 
 Widget _showScreen(BuildContext context) {
-  print(context.watch<UserRepository>().appState);
   switch (context.watch<UserRepository>().appState) {
     case AppState.authenticating:
-      // print(context.watch<UserRepository>().appState);
-      return Container(
-          child: Center(
-              child:
-                  CircularProgressIndicator())); // TODO: create loading screen
+      return SplashScreen();
 
     case AppState.unauthenticated:
       print(context.watch<UserRepository>().appState);
       return WelcomeScreen();
 
     case AppState.initial:
-      return Container(
-          child: Center(
-              child:
-                  CircularProgressIndicator())); // TODO: create splash screen
+      return SplashScreen();
 
     case AppState.authenticated:
       print(context.watch<UserRepository>().appState);

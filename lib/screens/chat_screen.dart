@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flash_chat_app/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
 final _firestore = FirebaseFirestore.instance;
@@ -23,8 +24,6 @@ class _ChatScreenState extends State<ChatScreen> {
   String messageText = "";
   @override
   void initState() {
-    // todo implement initState
-    //completed...
     super.initState();
     getCurrentUser();
   }
@@ -50,74 +49,92 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  DateTime? currentBackPressTime;
+  Future<bool> onWillPop() {
+    print('*' * 50);
+    DateTime now = DateTime.now();
+    if (currentBackPressTime == null ||
+        now.difference(currentBackPressTime!) > Duration(seconds: 2)) {
+      currentBackPressTime = now;
+      Fluttertoast.showToast(msg: 'Back again to exit');
+      return Future.value(false);
+    }
+    return Future.value(true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final _userRepository = Provider.of<UserRepository>(context);
     final _themeRepository = Provider.of<ThemeRepository>(context);
-    return Scaffold(
-      appBar: AppBar(
-        actions: <Widget>[
-          IconButton(
-              icon: Icon(Icons.logout),
-              tooltip: 'Log out',
-              onPressed: () {
-                _userRepository.logout();
-              }),
-          IconButton(
-              icon: Icon(Icons.album_sharp),
-              onPressed: () {
-                _themeRepository.toggleThemeState();
-              })
-        ],
-        title: Text('⚡️Chat'),
-        backgroundColor: Theme.of(context).accentColor,
-      ),
-      body: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            MessagesStream(),
-            Container(
-              decoration: kMessageContainerDecoration,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  Expanded(
-                    child: TextField(
-                      controller: messageTextController,
-                      onChanged: (value) {
-                        //Do something with the user input.
-                        //task completed
-                        messageText = value;
-                      },
-                      decoration: kMessageTextFieldDecoration,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      //message Text + loggedInUser.email
-                      if (messageTextController.text.trim().isNotEmpty) {
-                        messageTextController.clear();
-                        _firestore.collection('messages').add(
-                          {
-                            'text': messageText.trim(),
-                            'sender': loggedInUser.email,
-                            'time': DateTime.now().millisecondsSinceEpoch,
-                            'senderUid': FirebaseAuth.instance.currentUser!.uid,
-                          },
-                        );
-                      }
-                    },
-                    child: Text(
-                      'Send',
-                      style: kSendButtonTextStyle,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+
+    return WillPopScope(
+      onWillPop: onWillPop,
+      child: Scaffold(
+        appBar: AppBar(
+          actions: <Widget>[
+            IconButton(
+                icon: Icon(Icons.logout),
+                tooltip: 'Log out',
+                onPressed: () {
+                  _userRepository.logout();
+                }),
+            IconButton(
+                icon: Icon(Icons.album_sharp),
+                onPressed: () {
+                  _themeRepository.toggleThemeState();
+                })
           ],
+          title: Text('⚡️Chat'),
+          backgroundColor: Theme.of(context).accentColor,
+        ),
+        body: SafeArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              MessagesStream(),
+              Container(
+                decoration: kMessageContainerDecoration,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Expanded(
+                      child: TextField(
+                        controller: messageTextController,
+                        onChanged: (value) {
+                          //Do something with the user input.
+                          //task completed
+                          messageText = value;
+                        },
+                        decoration: kMessageTextFieldDecoration,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        //message Text + loggedInUser.email
+                        if (messageTextController.text.trim().isNotEmpty) {
+                          messageTextController.clear();
+                          _firestore.collection('messages').add(
+                            {
+                              'text': messageText.trim(),
+                              'sender': loggedInUser.email,
+                              'time': DateTime.now().millisecondsSinceEpoch,
+                              'senderUid':
+                                  FirebaseAuth.instance.currentUser!.uid,
+                            },
+                          );
+                        }
+                      },
+                      child: Text(
+                        'Send',
+                        style: kSendButtonTextStyle,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
