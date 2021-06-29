@@ -29,7 +29,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     final picker = ImagePicker();
     return Scaffold(
-      backgroundColor: Colors.white,
+      // backgroundColor: Colors.white,
       body: Center(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 24.0),
