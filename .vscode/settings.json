@@ -1,4 +1,5 @@
 {
     "git.ignoreLimitWarning": true,
-    "workbench.editor.showTabs": true
+    "workbench.editor.showTabs": true,
+    "github.gitAuthentication": false
 }
