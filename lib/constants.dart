@@ -36,3 +36,23 @@ const kTextFieldDecoration = InputDecoration(
     borderRadius: BorderRadius.all(Radius.circular(32.0)),
   ),
 );
+
+const List<Color> bubbleColor = <Color>[
+  Colors.red,
+  Colors.green,
+  Colors.orange,
+  Colors.cyan,
+  Colors.blue,
+  Colors.pink,
+  Colors.deepOrange,
+  Colors.blueGrey,
+  Colors.greenAccent,
+  Colors.blueAccent,
+  Colors.deepPurple,
+  Colors.amber,
+  Colors.brown,
+  Colors.indigo,
+  Colors.lime,
+  Colors.yellow,
+  Colors.teal,
+];
