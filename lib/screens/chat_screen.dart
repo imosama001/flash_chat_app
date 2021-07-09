@@ -1,4 +1,4 @@
-import 'package:flash_chat_app/main.dart';
+import 'package:flash_chat_app/repository/messageRepository.dart';
 import 'package:flash_chat_app/repository/themeRepository.dart';
 import 'package:flash_chat_app/repository/userRepository.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
+import 'package:swipe/swipe.dart';
 import 'package:uuid/uuid.dart';
 
 final _firestore = FirebaseFirestore.instance;
@@ -14,6 +15,9 @@ late final User loggedInUser;
 late final User messageSender;
 List<String> usersInChatUid = [];
 final ScrollController _scrollController = ScrollController();
+bool reply = false;
+String? replyTo = '';
+String replyMessage = '';
 
 Color getColorByUid({required String uid}) {
   Color res = Colors.grey;
@@ -22,6 +26,10 @@ Color getColorByUid({required String uid}) {
       usersInChatUid.contains(uid))
     res = bubbleColor[usersInChatUid.indexOf(uid)];
   return res;
+}
+
+void shuffleUsersList() {
+  usersInChatUid.shuffle();
 }
 
 class ChatScreen extends StatefulWidget {
@@ -43,8 +51,9 @@ class _ChatScreenState extends State<ChatScreen> {
       docs.forEach((doc) {
         usersInChatUid.add(doc.id);
       });
-      print(usersInChatUid);
+      shuffleUsersList();
     });
+
     getCurrentUser();
   }
 
@@ -86,6 +95,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final _userRepository = Provider.of<UserRepository>(context);
     final _themeRepository = Provider.of<ThemeRepository>(context);
+    final _messageRepository = Provider.of<MessageRepository>(context);
 
     // _scrollController.addListener(() {
     //   if (!_scrollController.position.atEdge)
@@ -104,9 +114,65 @@ class _ChatScreenState extends State<ChatScreen> {
     //   return _scrollController.position.atEdge;
     // }
 
+    int longHoldCount = 0;
+
     return WillPopScope(
       onWillPop: onWillPop,
       child: GestureDetector(
+        // wipe out all messages on 5 time long hold on screen (to be used only in code red situation)
+        // TODO: store code on db and fetch here
+        // TODO: add tracker: who used code red and when
+        onLongPress: () {
+          // reset longHoldCount after 1 minute
+          Future.delayed(Duration(minutes: 1)).then((_) => longHoldCount = 0);
+          longHoldCount++;
+          print(longHoldCount);
+          if (longHoldCount >= 5) {
+            showDialog(
+              context: context,
+              builder: (dialogContext) {
+                return AlertDialog(
+                  insetPadding:
+                      EdgeInsets.symmetric(horizontal: 10, vertical: 100),
+                  title: Text('CodeRed Dialog'),
+                  content: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text('Enter code'),
+                      TextField(
+                        onSubmitted: (value) {
+                          if (value.toLowerCase() == 'codered') {
+                            _firestore
+                                .collection('messages')
+                                .get()
+                                .then((coll) => coll.docs.forEach((doc) {
+                                      doc.reference.delete();
+                                    }));
+
+                            // record by whom codered was used and when and with what code
+                            _firestore.collection('codered').add({
+                              "when": Timestamp.now(),
+                              "who": FirebaseAuth
+                                  .instance.currentUser!.displayName,
+                              "uidOfUser":
+                                  FirebaseAuth.instance.currentUser!.uid,
+                              "codeUsed": value,
+                            });
+                          }
+
+                          Navigator.of(dialogContext).pop();
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+            longHoldCount = 0;
+          }
+        },
+
         // scroll to last on double tap anywhere
         onDoubleTap: () => _scrollController
             .animateTo(
@@ -141,13 +207,55 @@ class _ChatScreenState extends State<ChatScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 MessagesStream(),
+                context.watch<MessageRepository>().replyState ==
+                        ReplyState.replying
+                    ? Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.teal, width: 2),
+                        ),
+                        child: Stack(
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.all(10),
+                              child: MessageBubble(
+                                messageUid: Uuid().v4(),
+                                sender: '',
+                                senderUid:
+                                    FirebaseAuth.instance.currentUser!.uid,
+                                text: replyMessage,
+                                time: DateTime.now().millisecondsSinceEpoch,
+                                replyMessage: '',
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: IconButton(
+                                icon: Icon(Icons.cancel),
+                                onPressed: () {
+                                  setState(() {
+                                    reply = false;
+                                    replyMessage = '';
+                                    replyTo = '';
+                                    _messageRepository.unsetReplyState();
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : SizedBox(),
                 Container(
                   decoration: kMessageContainerDecoration,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
                       Expanded(
-                        child: TextField(
+                        child: TextFormField(
+                          maxLines: 5,
+                          minLines: 1,
                           controller: messageTextController,
                           onChanged: (value) {
                             //Do something with the user input.
@@ -174,9 +282,16 @@ class _ChatScreenState extends State<ChatScreen> {
                                 'senderUid':
                                     FirebaseAuth.instance.currentUser!.uid,
                                 'messageUid': messageUid,
+                                'replyMessage':
+                                    replyMessage, // text of the tagged message
                               },
                             );
                           }
+
+                          _messageRepository.unsetReplyState();
+                          replyTo = '';
+                          replyMessage = '';
+                          reply = false;
                         },
                         child: Text(
                           'Send',
@@ -195,44 +310,81 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-class MessageBubble extends StatelessWidget {
+class MessageBubble extends StatefulWidget {
   MessageBubble({
     required this.sender,
     required this.text,
     required this.senderUid,
     required this.messageUid,
     required this.time,
+    required this.replyMessage,
   });
   final String sender;
   final String text;
   final String senderUid;
   final String messageUid;
   final int time;
+  final String replyMessage;
 
   @override
+  _MessageBubbleState createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends State<MessageBubble> {
+  @override
   Widget build(BuildContext context) {
+    final _messageRepository = Provider.of<MessageRepository>(context);
     Size size = MediaQuery.of(context).size;
     void deleteMessage({required String messageUid}) async {
       await _firestore.collection('messages').doc(messageUid).delete();
+    }
+
+    if (!usersInChatUid.contains(widget.senderUid)) {
+      setState(() {
+        usersInChatUid.add(widget.senderUid);
+      });
     }
 
     bool isNotLate() {
       return DateTime.now()
               .subtract(Duration(hours: 2))
               .millisecondsSinceEpoch <=
-          time;
+          widget.time;
     }
+
+    // Future<Map<String, dynamic>?> getReplyMessageDetails() async {
+    //   Map<String, dynamic>? message;
+    //   var snap =
+    //       await _firestore.collection('messages').doc(widget.replyTo).get();
+    //   message = snap.data();
+    //   return message;
+    // }
+
+    // bool isReplyMessageLoaded = false;
+    // Map<String, dynamic>? replyMessageDetail;
+
+    // if (widget.replyTo != '') {
+    //   getReplyMessageDetails().then((value) {
+    //     setState(() {
+    //       replyMessageDetail = value;
+    //       isReplyMessageLoaded = true;
+    //       print(value);
+    //       print("*" * 100);
+    //     });
+    //   });
+    // }
 
     return GestureDetector(
       onLongPress: () {
-        if (senderUid == FirebaseAuth.instance.currentUser!.uid && isNotLate())
+        if (widget.senderUid == FirebaseAuth.instance.currentUser!.uid &&
+            isNotLate())
           showDialog(
             context: context,
             builder: (ctxt) => AlertDialog(
               actions: [
                 TextButton(
                     onPressed: () {
-                      deleteMessage(messageUid: messageUid);
+                      deleteMessage(messageUid: widget.messageUid);
                       Navigator.of(ctxt).pop();
                     },
                     child: Text('Delete')),
@@ -248,46 +400,71 @@ class MessageBubble extends StatelessWidget {
         else
           Fluttertoast.showToast(msg: 'Can not be deleted');
       },
-      child: Padding(
-        padding: EdgeInsets.all(size.width * .02),
-        child: Column(
-          crossAxisAlignment:
-              senderUid == FirebaseAuth.instance.currentUser!.uid
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-          children: [
-            // Text(sender, style: TextStyle(color: Colors.black54, fontSize: 12)),
-            Container(
-              constraints: BoxConstraints(maxWidth: size.width * 0.7),
-              child: Material(
-                elevation: size.width * .01,
-                borderRadius: BorderRadius.only(
-                  topLeft: senderUid == FirebaseAuth.instance.currentUser!.uid
-                      ? Radius.circular(size.height * .05)
-                      : Radius.zero,
-                  topRight: senderUid != FirebaseAuth.instance.currentUser!.uid
-                      ? Radius.circular(size.height * .05)
-                      : Radius.zero,
-                  bottomLeft: Radius.circular(size.height * .05),
-                  bottomRight: Radius.circular(size.height * .05),
-                ),
-                color: senderUid == FirebaseAuth.instance.currentUser!.uid
-                    ? Colors.blueAccent[400]
-                    : getColorByUid(uid: senderUid),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                      vertical: size.height * .015,
-                      horizontal: size.width * .05),
-                  child: Text(
-                    text,
-                    style: TextStyle(
-                        fontSize: size.width * .04, color: Colors.white),
-                  ),
+      child: GestureDetector(
+        onHorizontalDragStart: (details) {
+      setState(() {
+              reply = true;
+              replyMessage = widget.text;
+              replyTo = widget.messageUid;
+              _messageRepository.setReplyState();
+            });    
+        },
+              child: Padding(
+                padding: EdgeInsets.all(size.width * .02),
+                child: Column(
+                  crossAxisAlignment:
+                      widget.senderUid == FirebaseAuth.instance.currentUser!.uid
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
+                  children: [
+                    widget.replyMessage != ''
+                        // reply message text above the message bubble
+                        ? Container(
+                            constraints: BoxConstraints(maxWidth: size.width * 0.7),
+                            padding: EdgeInsets.all(4.0),
+                            decoration: BoxDecoration(
+                                border: Border(
+                                    left: BorderSide(
+                                        color: Colors.green.shade800, width: 2))),
+                            child: Text(widget.replyMessage),
+                          )
+                        : SizedBox(),
+                    // Text(sender, style: TextStyle(color: Colors.black54, fontSize: 12)),
+                    Container(
+                      constraints: BoxConstraints(maxWidth: size.width * 0.7),
+                      child: Material(
+                        elevation: size.width * .01,
+                        borderRadius: BorderRadius.only(
+                          topLeft: widget.senderUid ==
+                                  FirebaseAuth.instance.currentUser!.uid
+                              ? Radius.circular(size.height * .05)
+                              : Radius.zero,
+                          topRight: widget.senderUid !=
+                                  FirebaseAuth.instance.currentUser!.uid
+                              ? Radius.circular(size.height * .05)
+                              : Radius.zero,
+                          bottomLeft: Radius.circular(size.height * .05),
+                          bottomRight: Radius.circular(size.height * .05),
+                        ),
+                        color:
+                            widget.senderUid == FirebaseAuth.instance.currentUser!.uid
+                                ? Colors.blueAccent.shade700
+                                : getColorByUid(uid: widget.senderUid),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                              vertical: size.height * .015,
+                              horizontal: size.width * .05),
+                          child: Text(
+                            widget.text,
+                            style: TextStyle(
+                                fontSize: size.width * .04, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -327,6 +504,7 @@ class MessagesStream extends StatelessWidget {
                           senderUid: messageList[i]['senderUid'],
                           messageUid: messageList[i]['messageUid'],
                           time: messageList[i]['time'],
+                          replyMessage: messageList[i]['replyMessage'],
                         ),
                       // Text(message['text'] +
                       //     '  from  ' +

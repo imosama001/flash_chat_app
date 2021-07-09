@@ -1,5 +1,7 @@
 {
     "git.ignoreLimitWarning": true,
     "workbench.editor.showTabs": true,
-    "github.gitAuthentication": false
+    "github.gitAuthentication": false,
+    "dart.previewFlutterUiGuides": true,
+    "dart.previewFlutterUiGuidesCustomTracking": true
 }

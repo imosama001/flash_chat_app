@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flash_chat_app/repository/messageRepository.dart';
 import 'package:flash_chat_app/repository/themeRepository.dart';
 import 'package:flash_chat_app/repository/userRepository.dart';
 import 'package:flash_chat_app/screens/splashScreen.dart';
@@ -25,6 +26,9 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => ThemeRepository(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => MessageRepository(),
         ),
       ],
     ),
