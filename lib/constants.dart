@@ -46,7 +46,6 @@ const List<Color> bubbleColor = <Color>[
   Colors.pink,
   Colors.deepOrange,
   Colors.blueGrey,
-  Colors.greenAccent,
   Colors.blueAccent,
   Colors.deepPurple,
   Colors.amber,
