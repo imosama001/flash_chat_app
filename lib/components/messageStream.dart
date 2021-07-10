@@ -28,6 +28,7 @@ class MessagesStream extends StatelessWidget {
 
           return messageList.isNotEmpty
               ? Expanded(
+                  // TODO: implement with animated list view
                   child: ListView(
                     controller: scrollController,
                     reverse: true,
@@ -41,6 +42,7 @@ class MessagesStream extends StatelessWidget {
                           messageUid: messageList[i]['messageUid'],
                           time: messageList[i]['time'],
                           replyMessage: messageList[i]['replyMessage'],
+                          type: messageList[i]['type'],
                         ),
                       // Text(message['text'] +
                       //     '  from  ' +

@@ -124,32 +124,38 @@ class _ChatScreenState extends State<ChatScreen> {
 
     int longHoldCount = 0;
 
+    void coderedDialogController() {
+      // reset longHoldCount after 1 minute
+      Future.delayed(Duration(minutes: 1)).then((_) => longHoldCount = 0);
+      longHoldCount++;
+      print(longHoldCount);
+      if (longHoldCount >= 5) {
+        coderedDialog(context, deleteAllMessages, addCodeRedRecord);
+        longHoldCount = 0;
+      }
+    }
+
+    void scrollToLast() {
+      _scrollController
+          .animateTo(
+        0,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      )
+          .catchError((onError) {
+        print(onError);
+      });
+    }
+
     return WillPopScope(
       onWillPop: onWillPop,
       child: GestureDetector(
         // wipe out all messages on 5 time long hold on screen (to be used only in code red situation)
         // TODO: store code on db and fetch here
-        onLongPress: () {
-          // reset longHoldCount after 1 minute
-          Future.delayed(Duration(minutes: 1)).then((_) => longHoldCount = 0);
-          longHoldCount++;
-          print(longHoldCount);
-          if (longHoldCount >= 5) {
-            coderedDialog(context, deleteAllMessages, addCodeRedRecord);
-            longHoldCount = 0;
-          }
-        },
+        onLongPress: coderedDialogController,
 
         // scroll to last on double tap anywhere
-        onDoubleTap: () => _scrollController
-            .animateTo(
-          0,
-          duration: Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        )
-            .catchError((onError) {
-          print(onError);
-        }),
+        onDoubleTap: scrollToLast,
         child: Scaffold(
           appBar: AppBar(
             actions: <Widget>[
@@ -190,14 +196,15 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
+          // TODO: image send button
+          
           Expanded(
+
             child: TextFormField(
               maxLines: 5,
               minLines: 1,
               controller: messageTextController,
               onChanged: (value) {
-                //Do something with the user input.
-                //task completed
                 messageText = value;
               },
               decoration: kMessageTextFieldDecoration,
@@ -205,13 +212,13 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           TextButton(
             onPressed: () {
-              String messageUid = Uuid().v4();
+              String messageUid = Uuid().v4(); // generating a unique id
               //message Text + loggedInUser.email
               if (messageTextController.text.trim().isNotEmpty) {
                 messageTextController.clear();
                 _firestore.collection('messages').doc(messageUid).set(
                   {
-                    'type': 'text',
+                    'type': 'text', // text, image, location ....
                     'text': messageText.trim(),
                     'sender': loggedInUser.email,
                     'time': DateTime.now().millisecondsSinceEpoch,
@@ -284,6 +291,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     text: replyMessage,
                     time: DateTime.now().millisecondsSinceEpoch,
                     replyMessage: '',
+                    type: '',
                   ),
                 ),
                 Positioned(
@@ -313,6 +321,7 @@ class MessageBubble extends StatefulWidget {
     required this.messageUid,
     required this.time,
     required this.replyMessage,
+    required this.type,
   });
   final String sender;
   final String text;
@@ -320,6 +329,7 @@ class MessageBubble extends StatefulWidget {
   final String messageUid;
   final int time;
   final String replyMessage;
+  final String type;
 
   @override
   _MessageBubbleState createState() => _MessageBubbleState();
@@ -414,6 +424,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                     )
                   : SizedBox(),
               // Text(sender, style: TextStyle(color: Colors.black54, fontSize: 12)),
+              widget.type == 'text' ?
               Container(
                 constraints: BoxConstraints(maxWidth: size.width * 0.7),
                 child: Material(
@@ -445,6 +456,8 @@ class _MessageBubbleState extends State<MessageBubble> {
                     ),
                   ),
                 ),
+              ) : Container(
+                // TODO: implement image preview
               ),
             ],
           ),
