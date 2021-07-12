@@ -12,6 +12,8 @@ Register with email and password<br />
 Login with email and password<br />
 Themes (light mode and dark mode)
 Send text messages
+Delete messages within a time limit
 Reply to messages
 Usernames are not visible (and it is a feature, we'll implement method to make it optional)
 Different messages bubble colors for different users (same for a session, and changes randomly on re-opening app).
+Any group member can delete all messages with a given password / code (user who had deleted all messages, their details will be logged)
