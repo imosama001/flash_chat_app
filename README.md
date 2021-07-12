@@ -1,16 +1,17 @@
 # flash_chat_app
 
-A new Flutter project.
+A group messaging app inspired by having a personal group without any privacy threat.<br />
+GIving users a perfect group chatting experience with tons of upcoming features like chat in private mode (no name visible, can be seen by admin in urgent or emergency case, but there must be some rules), polls, split bills, send money through UPI, create new groups, multiple groups with different people and for different purpose.<br />
+And many more ideas are cooking .......
 
-## Getting Started
+## Getting started
+Fork this repository and add firebase config file, and you are good to go.<br />
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Current features in app:
+Register with email and password<br />
+Login with email and password<br />
+Themes (light mode and dark mode)
+Send text messages
+Reply to messages
+Usernames are not visible (and it is a feature, we'll implement method to make it optional)
+Different messages bubble colors for different users (same for a session, and changes randomly on re-opening app).
