@@ -1,7 +1,9 @@
 {
-    "git.ignoreLimitWarning": true,
-    "workbench.editor.showTabs": true,
-    "github.gitAuthentication": false,
-    "dart.previewFlutterUiGuides": true,
-    "dart.previewFlutterUiGuidesCustomTracking": true
+  "git.ignoreLimitWarning": true,
+  "workbench.editor.showTabs": true,
+  "github.gitAuthentication": false,
+  "dart.previewFlutterUiGuides": true,
+  "dart.previewFlutterUiGuidesCustomTracking": true,
+  "editor.defaultFormatter": "Dart-Code.dart-code",
+  "editor.formatOnSave": true
 }
