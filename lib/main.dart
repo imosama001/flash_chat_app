@@ -40,8 +40,8 @@ ThemeData themeDataDark = ThemeData.dark().copyWith(
 );
 
 ThemeData themeDataLight = ThemeData.light().copyWith(
-    // accentColor: Colors.redAccent,
-    );
+  // accentColor: Colors.redAccent,
+);
 
 ThemeData theme = themeDataLight;
 
